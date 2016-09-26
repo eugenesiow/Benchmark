@@ -1,13 +1,8 @@
 package org.insight_centre.aceis.io.streams.cqels;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.sparql.core.Var;
-
-import eu.larkc.csparql.common.RDFTuple;
 
 public class CQELSResultListener implements ContinuousListener {
 	private String uri;
@@ -45,6 +38,7 @@ public class CQELSResultListener implements ContinuousListener {
 				if (varName.contains("obId")) {
 					if (!capturedObIds.contains(varStr)) {
 						capturedObIds.add(varStr);
+						System.out.println(varStr);
 						long initTime = CityBench.obMap.get(varStr).getSysTimestamp().getTime();
 						latencies.put(varStr, (System.currentTimeMillis() - initTime));
 					}

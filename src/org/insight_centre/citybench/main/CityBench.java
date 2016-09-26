@@ -1,10 +1,9 @@
 package org.insight_centre.citybench.main;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -19,11 +18,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.deri.cqels.engine.CQELSEngine;
 import org.deri.cqels.engine.ContinuousSelect;
 import org.deri.cqels.engine.ExecContext;
-import org.deri.cqels.engine.ReasonerContext;
 import org.insight_centre.aceis.eventmodel.EventDeclaration;
 import org.insight_centre.aceis.io.EventRepository;
 import org.insight_centre.aceis.io.rdf.RDFFileManager;
@@ -34,13 +33,18 @@ import org.insight_centre.aceis.io.streams.cqels.CQELSAarhusWeatherStream;
 import org.insight_centre.aceis.io.streams.cqels.CQELSLocationStream;
 import org.insight_centre.aceis.io.streams.cqels.CQELSResultListener;
 import org.insight_centre.aceis.io.streams.cqels.CQELSSensorStream;
-import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusPollutionStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusParkingStream;
+import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusPollutionStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusTrafficStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusWeatherStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLLocationStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLResultObserver;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLSensorStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SResultListener;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SSensorStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2STrafficStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SUserLocationStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SWeatherStream;
 import org.insight_centre.aceis.observations.SensorObservation;
 import org.insight_centre.aceis.utils.test.PerformanceMonitor;
 //import org.insight_centre.aceis.io.streams.csparql.CSPARQLResultObserver;
@@ -48,24 +52,25 @@ import org.slf4j.Logger;
 //import org.apache.log4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.hp.hpl.jena.reasoner.Reasoner;
+import com.espertech.esper.client.EPServiceProvider;
+import com.espertech.esper.client.EPServiceProviderManager;
+import com.espertech.esper.client.EPStatement;
 import com.hp.hpl.jena.reasoner.ReasonerRegistry;
 
 import eu.larkc.csparql.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.engine.CsparqlQueryResultProxy;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
 public class CityBench {
 	public enum RSPEngine {
-		cqels, csparql
+		cqels, csparql, sparql2stream
 	}
 
 	public static ExecContext cqelsContext, tempContext;
+	public static EPServiceProvider sparql2streamService;
 	public static CsparqlEngineImpl csparqlEngine;
 	private static final Logger logger = LoggerFactory.getLogger(CityBench.class);
 	public static ConcurrentHashMap<String, SensorObservation> obMap = new ConcurrentHashMap<String, SensorObservation>();
+	public static ConcurrentHashMap<String, Long> timeMap = new ConcurrentHashMap<String, Long>();
 
 	// HashMap<String, String> parameters;
 	// Properties prop;
@@ -98,9 +103,9 @@ public class CityBench {
 		}
 	}
 
-	private String dataset, ontology, cqels_query, csparql_query, streams;
+	private String dataset, ontology, cqels_query, csparql_query, sparql2stream_query, streams;
 	private long duration = 0; // experiment time in milliseconds
-	private RSPEngine engine;
+	public static RSPEngine engine;
 	EventRepository er;
 	private double frequency = 1.0;
 	public static PerformanceMonitor pm;
@@ -115,6 +120,7 @@ public class CityBench {
 	private double rate = 1.0; // stream rate factor
 	public static ConcurrentHashMap<String, Object> registeredQueries = new ConcurrentHashMap<String, Object>();
 	public static List startedStreamObjects = new ArrayList();
+	public static List<S2SSensorStream> S2SStreams = new ArrayList<S2SSensorStream>();
 	private String resultName;
 	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 	private Date start, end;
@@ -138,8 +144,9 @@ public class CityBench {
 			this.ontology = prop.getProperty("ontology");
 			this.cqels_query = prop.getProperty("cqels_query");
 			this.csparql_query = prop.getProperty("csparql_query");
+			this.sparql2stream_query = prop.getProperty("sparql2stream_query");
 			this.streams = prop.getProperty("streams");
-			if (this.dataset == null || this.ontology == null || this.cqels_query == null || this.csparql_query == null
+			if (this.dataset == null || this.ontology == null || this.cqels_query == null || this.csparql_query == null || this.sparql2stream_query == null
 					|| this.streams == null)
 				throw new Exception("Configuration properties incomplete.");
 		} catch (Exception e) {
@@ -160,6 +167,8 @@ public class CityBench {
 				this.engine = RSPEngine.cqels;
 			else if (parameters.get("engine").equals("csparql"))
 				this.engine = RSPEngine.csparql;
+			else if (parameters.get("engine").equals("sparql2stream"))
+				this.engine = RSPEngine.sparql2stream;
 			else
 				throw new Exception("RSP Engine not supported.");
 		} else
@@ -252,6 +261,18 @@ public class CityBench {
 
 	}
 
+	List<String> getStreamNamesFromEpl(String query) throws Exception {
+		Set<String> resultSet = new HashSet<String>();
+		Pattern p = Pattern.compile("([^\\s]*)\\.win\\:");
+		Matcher m = p.matcher(query);
+		while(m.find()) {
+			resultSet.add(m.group(1));
+		}
+		List<String> results = new ArrayList<String>();
+		results.addAll(resultSet);
+		return results;
+	}
+	
 	List<String> getStreamFileNamesFromQuery(String query) throws Exception {
 		Set<String> resultSet = new HashSet<String>();
 		String[] streamSegments = query.trim().split("stream");
@@ -279,6 +300,15 @@ public class CityBench {
 			this.registerCQELSQueries();
 		this.startCQELSStreams();
 	}
+	
+	private void initSPARQL2STREAM() throws Exception {
+		sparql2streamService = EPServiceProviderManager.getProvider("citybench");
+
+		this.setupS2SStreams();
+		for (int i = 0; i < this.queryDuplicates; i++)
+			this.registerS2SQueries();
+		this.startS2SStreams();
+	}
 
 	private void initCSPARQL() throws IOException {
 		try {
@@ -301,6 +331,8 @@ public class CityBench {
 		String qd;
 		if (this.engine == RSPEngine.cqels)
 			qd = this.cqels_query;
+		else if (this.engine == RSPEngine.sparql2stream)
+			qd = this.sparql2stream_query;
 		else
 			qd = this.csparql_query;
 		if (this.queries == null) {
@@ -362,6 +394,24 @@ public class CityBench {
 
 	}
 
+	private void registerS2SQueries() {
+		for (Entry en : this.queryMap.entrySet()) {
+			String qid = en.getKey() + "-" + UUID.randomUUID();
+			String query = en.getValue() + "";
+			registerS2SQuery(qid, query);
+		}
+	}
+	
+	private void registerS2SQuery(String qid, String query) {
+		if (!registeredQueries.keySet().contains(qid)) {
+			S2SResultListener srl = new S2SResultListener(qid);
+	        EPStatement statement = sparql2streamService.getEPAdministrator().createEPL(query);
+	        statement.addListener(srl);
+	        logger.info("Registering result observer: " + srl.getUri());
+			registeredQueries.put(qid, srl);
+		}
+	}
+
 	private void registerCSPARQLQueries() throws ParseException {
 		for (Entry en : this.queryMap.entrySet()) {
 			String qid = en.getKey() + "-" + UUID.randomUUID();
@@ -421,6 +471,45 @@ public class CityBench {
 		}
 
 	}
+	
+	private void setupS2SStreams() throws Exception {
+		for (String s : this.queryMap.values()) {
+			this.setupS2SStreamsFromQuery(s);
+		}
+	}
+	
+	private void setupS2SStreamsFromQuery(String query) throws Exception {
+		List<String> streamNames = this.getStreamNamesFromEpl(query);
+		for (String sn : streamNames) {
+			if (!this.startedStreams.contains(sn)) {
+				this.startedStreams.add(sn);
+				S2SSensorStream sss;
+				if (sn.toLowerCase().contains("traffic")) {
+					sss = new S2STrafficStream(sparql2streamService,sn,sn.replace("AarhusTrafficData", ""),"dataset/MetaData/trafficMetaData.csv","streams/"+sn+".stream");
+//				} else if (sn.toLowerCase().contains("pollution")) {
+//					css = new CSPARQLAarhusPollutionStream(uri, path, ed, start, end);
+				} else if (sn.toLowerCase().contains("weather")) {
+					sss = new S2SWeatherStream(sparql2streamService,sn,"streams/"+sn+".stream");
+				} else if (sn.toLowerCase().contains("location"))
+					sss = new S2SUserLocationStream(sparql2streamService,sn,"streams/"+sn+".stream");
+//				else if (sn.toLowerCase().contains("parking"))
+//					css = new CSPARQLAarhusParkingStream(uri, path, ed, start, end);
+				else
+					throw new Exception("Sensor type not supported.");
+				sss.setRate(this.rate);
+				sss.setFreq(this.frequency);
+				S2SStreams.add(sss);
+			}
+		}
+
+	}
+	
+	private void startS2SStreams() throws Exception {
+		for(S2SSensorStream sss:S2SStreams) {
+			new Thread(sss).start();
+			startedStreamObjects.add(sss);
+		}
+	}
 
 	private void startCSPARQLStreams() throws Exception {
 		for (String s : this.queryMap.values()) {
@@ -468,6 +557,8 @@ public class CityBench {
 		if (this.engine == RSPEngine.cqels)
 			// start cqels test
 			this.initCQELS();
+		else if (this.engine == RSPEngine.sparql2stream)
+			this.initSPARQL2STREAM();
 		else if (this.engine == RSPEngine.csparql)
 			this.initCSPARQL();
 

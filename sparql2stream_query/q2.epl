@@ -1,0 +1,9 @@
+    SELECT
+    	AarhusWeatherData0.eventId AS eventId ,
+        AarhusWeatherData0.tempm AS v1 ,
+        AarhusWeatherData0.hum AS v2 ,
+        AarhusWeatherData0.wspdm AS v3 ,
+        AarhusTrafficData158505.congestionLevel AS v4    
+    FROM
+        AarhusWeatherData0.win:time(3 sec) ,
+        AarhusTrafficData158505.win:time(3 sec)   

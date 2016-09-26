@@ -31,5 +31,6 @@
 	<classpathentry kind="lib" path="lib/CQELS-lib/colt.jar"/>
 	<classpathentry kind="lib" path="lib/CQELS-lib/cglib-nodep-2.2.jar"/>
 	<classpathentry kind="lib" path="lib/CQELS-lib/antlr-runtime-3.2.jar"/>
+	<classpathentry kind="lib" path="lib/esper-5.5.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

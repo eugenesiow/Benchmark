@@ -17,8 +17,10 @@ import org.insight_centre.aceis.io.streams.cqels.CQELSResultListener;
 import org.insight_centre.aceis.io.streams.cqels.CQELSSensorStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLResultObserver;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLSensorStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SSensorStream;
 import org.insight_centre.aceis.observations.SensorObservation;
 import org.insight_centre.citybench.main.CityBench;
+import org.insight_centre.citybench.main.CityBench.RSPEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,12 +180,16 @@ public class PerformanceMonitor implements Runnable {
 	}
 
 	private void cleanup() {
-		if (CityBench.csparqlEngine != null) {
+		if (CityBench.engine == RSPEngine.csparql) {
 			// CityBench.csparqlEngine.destroy();
 			for (Object css : CityBench.startedStreamObjects) {
 				((CSPARQLSensorStream) css).stop();
 			}
-		} else {
+		} else if(CityBench.engine == RSPEngine.sparql2stream) {
+			for (Object css : CityBench.startedStreamObjects) {
+				((S2SSensorStream) css).stop();
+			}
+		} else if(CityBench.engine == RSPEngine.cqels) {
 			// CityBench.cqelsContext.engine().
 			for (Object css : CityBench.startedStreamObjects) {
 				((CQELSSensorStream) css).stop();

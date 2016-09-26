@@ -1,0 +1,9 @@
+    SELECT
+        SensorRepository.LAT1 AS lat1 ,
+        SensorRepository.LON1 AS lon1 ,
+        UserLocationService.lat AS lat2 ,
+        UserLocationService.lon AS lon2       
+    FROM
+        UserLocationService.win:time(3 sec) ,
+        AarhusParkingDataKALKVAERKSVEJ.win:time(20 sec) ,
+        sql:SensorRepository [ 'SELECT SensorRepository.lat AS lat1 , SensorRepository.lon AS lon1 FROM SensorRepository WHERE SensorRepository.propId=\'parkingproperty-8\'' ] AS SensorRepository

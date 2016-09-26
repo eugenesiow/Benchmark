@@ -1,0 +1,9 @@
+    SELECT
+        AarhusCulturalEvents.TITLE AS title ,
+        AarhusCulturalEvents.LAT1 AS lat1 ,
+        AarhusCulturalEvents.LON1 AS lon1 ,
+        UserLocationService.lat AS lat2 ,
+        UserLocationService.lon AS lon2     
+    FROM
+        UserLocationService.win:time(3 sec) ,
+        sql:AarhusCulturalEvents [ 'SELECT AarhusCulturalEvents.title AS title , AarhusCulturalEvents.lat AS lat1 , AarhusCulturalEvents.lon AS lon1 FROM AarhusCulturalEvents WHERE (((${UserLocationService.lat}-AarhusCulturalEvents.lat)*(${UserLocationService.lat}-AarhusCulturalEvents.lat))+((${UserLocationService.lon}-AarhusCulturalEvents.lon)*(${UserLocationService.lon}-AarhusCulturalEvents.lon)))<0.1' ] AS AarhusCulturalEvents

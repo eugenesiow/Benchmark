@@ -1,0 +1,9 @@
+    SELECT
+        AarhusParkingDataKALKVAERKSVEJ.totalspaces AS v1 ,
+        AarhusParkingDataSKOLEBAKKEN.totalspaces AS v2   
+    FROM
+        AarhusParkingDataKALKVAERKSVEJ.win:time(3 sec) ,
+        AarhusParkingDataSKOLEBAKKEN.win:time(3 sec) 
+    WHERE
+        AarhusParkingDataKALKVAERKSVEJ.totalspaces>0 
+        OR AarhusParkingDataSKOLEBAKKEN.totalspaces>0   

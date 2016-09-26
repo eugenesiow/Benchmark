@@ -1,0 +1,7 @@
+    SELECT
+    	AarhusTrafficData182955.eventId AS eventId ,
+        AarhusTrafficData182955.congestionLevel AS v1 ,
+        AarhusTrafficData158505.congestionLevel AS v2  
+    FROM
+        AarhusTrafficData182955.win:time(3 sec) ,
+        AarhusTrafficData158505.win:time(3 sec)
