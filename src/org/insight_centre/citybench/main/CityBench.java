@@ -207,13 +207,16 @@ public class CityBench {
 		this.resultName = UUID.randomUUID() + " r=" + this.rate + ",f=" + this.frequency + ",dup="
 				+ this.queryDuplicates + ",e=" + this.engine + ",q=" + this.queries;// +
 		// parameters.toString();
-		// initialize datasets
-		try {
-			tempContext = RDFFileManager.initializeCQELSContext(this.dataset, ReasonerRegistry.getRDFSReasoner());
-			er = RDFFileManager.buildRepoFromFile(0);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
+		
+		if(this.engine == RSPEngine.cqels) {
+			// initialize datasets
+			try {
+				tempContext = RDFFileManager.initializeCQELSContext(this.dataset, ReasonerRegistry.getRDFSReasoner());
+				er = RDFFileManager.buildRepoFromFile(0);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(0);
+			}
 		}
 	}
 

@@ -38,7 +38,7 @@ public class CQELSResultListener implements ContinuousListener {
 				if (varName.contains("obId")) {
 					if (!capturedObIds.contains(varStr)) {
 						capturedObIds.add(varStr);
-						System.out.println(varStr);
+//						System.out.println(varStr);
 						long initTime = CityBench.obMap.get(varStr).getSysTimestamp().getTime();
 						latencies.put(varStr, (System.currentTimeMillis() - initTime));
 					}
