@@ -1,0 +1,13 @@
+    SELECT
+        SensorRepository.LAT1 AS lat1 ,
+        SensorRepository.LON1 AS lon1   ,
+        AarhusPollutionData201399.api AS v1 ,
+        AarhusPollutionData197626.api AS v2  ,
+        SensorRepository2.LAT2 AS lat2 ,
+        SensorRepository2.LON2 AS lon2 ,
+        AarhusPollutionData201399.eventId AS eventId                     
+    FROM
+        AarhusPollutionData201399.win:time(3 sec) ,
+        AarhusPollutionData197626.win:time(3 sec) ,
+        sql:SensorRepository [ 'SELECT SensorRepository.lat AS lat1 , SensorRepository.lon AS lon1 FROM SensorRepository WHERE SensorRepository.propId=\'Property-87bf19d1-1813-4cd3-8f34-f14b11bc8b4e\'' ] AS SensorRepository,
+        sql:SensorRepository [ 'SELECT SensorRepository.lat AS lat2 , SensorRepository.lon AS lon2 FROM SensorRepository WHERE SensorRepository.propId=\'Property-9ec5c9c5-a38f-48cf-9b5c-cdcc7a8e3fd2\'' ] AS SensorRepository2    

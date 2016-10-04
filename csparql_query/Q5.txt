@@ -1,8 +1,8 @@
 select  ?evtId ?title #?lat1 ?lon1
 
 ?obId2  ?lat2 ?lon2
-from <http://127.0.0.1:9000/WebGlCity/RDF/AarhusCulturalEvents.rdf>  
-from <http://127.0.0.1:9000/WebGlCity/RDF/SensorRepository.rdf>  
+from <http://127.0.0.102:9000/AarhusCulturalEvents.rdf>  
+from <http://127.0.0.102:9000/SensorRepository.rdf>  
 from stream <http://www.insight-centre.org/dataset/SampleEventService#AarhusTrafficData158505> [range 3000ms step 1s]
 where {
 ?p2   a <http://www.insight-centre.org/citytraffic#CongestionLevel>. 

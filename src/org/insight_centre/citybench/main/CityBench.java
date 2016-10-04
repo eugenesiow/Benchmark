@@ -40,9 +40,12 @@ import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusWeatherStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLLocationStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLResultObserver;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLSensorStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SPollutionStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SPollutionStreamMin;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SResultListener;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SSensorStream;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2STrafficStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2STrafficStreamMin;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SUserLocationStream;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SWeatherStream;
 import org.insight_centre.aceis.observations.SensorObservation;
@@ -52,6 +55,8 @@ import org.slf4j.Logger;
 //import org.apache.log4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.espertech.esper.client.Configuration;
+import com.espertech.esper.client.ConfigurationDBRef;
 import com.espertech.esper.client.EPServiceProvider;
 import com.espertech.esper.client.EPServiceProviderManager;
 import com.espertech.esper.client.EPStatement;
@@ -208,7 +213,7 @@ public class CityBench {
 				+ this.queryDuplicates + ",e=" + this.engine + ",q=" + this.queries;// +
 		// parameters.toString();
 		
-		if(this.engine == RSPEngine.cqels) {
+		if(this.engine == RSPEngine.cqels || this.engine == RSPEngine.csparql) {
 			// initialize datasets
 			try {
 				tempContext = RDFFileManager.initializeCQELSContext(this.dataset, ReasonerRegistry.getRDFSReasoner());
@@ -305,7 +310,17 @@ public class CityBench {
 	}
 	
 	private void initSPARQL2STREAM() throws Exception {
-		sparql2streamService = EPServiceProviderManager.getProvider("citybench");
+
+		ConfigurationDBRef dbConfig = new ConfigurationDBRef();
+		dbConfig.setDriverManagerConnection("org.h2.Driver",
+		                                    "jdbc:h2:./dataset/CityBench", 
+		                                    "sa", 
+		                                    "");
+		Configuration engineConfig = new Configuration();
+		engineConfig.addDatabaseReference("AarhusCulturalEvents", dbConfig);
+		engineConfig.addDatabaseReference("SensorRepository", dbConfig);
+	
+		sparql2streamService = EPServiceProviderManager.getProvider("citybench", engineConfig);
 
 		this.setupS2SStreams();
 		for (int i = 0; i < this.queryDuplicates; i++)
@@ -483,14 +498,15 @@ public class CityBench {
 	
 	private void setupS2SStreamsFromQuery(String query) throws Exception {
 		List<String> streamNames = this.getStreamNamesFromEpl(query);
+		
 		for (String sn : streamNames) {
 			if (!this.startedStreams.contains(sn)) {
 				this.startedStreams.add(sn);
 				S2SSensorStream sss;
 				if (sn.toLowerCase().contains("traffic")) {
 					sss = new S2STrafficStream(sparql2streamService,sn,sn.replace("AarhusTrafficData", ""),"dataset/MetaData/trafficMetaData.csv","streams/"+sn+".stream");
-//				} else if (sn.toLowerCase().contains("pollution")) {
-//					css = new CSPARQLAarhusPollutionStream(uri, path, ed, start, end);
+				} else if (sn.toLowerCase().contains("pollution")) {
+					sss = new S2SPollutionStream(sparql2streamService,sn,"streams/"+sn+".stream");
 				} else if (sn.toLowerCase().contains("weather")) {
 					sss = new S2SWeatherStream(sparql2streamService,sn,"streams/"+sn+".stream");
 				} else if (sn.toLowerCase().contains("location"))
@@ -504,7 +520,6 @@ public class CityBench {
 				S2SStreams.add(sss);
 			}
 		}
-
 	}
 	
 	private void startS2SStreams() throws Exception {

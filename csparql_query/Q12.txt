@@ -3,7 +3,7 @@
 
 select (count(?obId1) as ?obCnt) 
   from stream <http://www.insight-centre.org/dataset/SampleEventService#AarhusTrafficData186979> [range 3000ms step 1s]
-  from <http://127.0.0.1:9000/WebGlCity/RDF/SensorRepository.rdf> 
+  from <http://127.0.0.102:9000/SensorRepository.rdf> 
 where {
 
 ?p1   a <http://www.insight-centre.org/citytraffic#CongestionLevel>.
