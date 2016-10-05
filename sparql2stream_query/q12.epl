@@ -1,0 +1,8 @@
+SELECT
+    count(AarhusTrafficData186979.congestionLevel) AS obCnt 
+FROM
+    AarhusTrafficData186979.win:time(3 sec) 
+WHERE
+    AarhusTrafficData186979.congestionLevel>=-1  
+HAVING
+    count(AarhusTrafficData186979.congestionLevel)>3 
