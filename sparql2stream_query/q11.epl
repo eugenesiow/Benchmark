@@ -1,0 +1,14 @@
+	SELECT
+        AarhusWeatherData0.wspdm AS v1 
+    FROM
+        AarhusWeatherData0.win:time(3 sec)     
+    UNION
+    SELECT
+        AarhusWeatherData0.tempm AS v1 
+    FROM
+        AarhusWeatherData0.win:time(3 sec)     
+    UNION
+    SELECT
+        AarhusWeatherData0.hum AS v1 
+    FROM
+        AarhusWeatherData0.win:time(3 sec)  
