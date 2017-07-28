@@ -40,12 +40,11 @@ import org.insight_centre.aceis.io.streams.csparql.CSPARQLAarhusWeatherStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLLocationStream;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLResultObserver;
 import org.insight_centre.aceis.io.streams.csparql.CSPARQLSensorStream;
+import org.insight_centre.aceis.io.streams.sparql2stream.S2SParkingStream;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SPollutionStream;
-import org.insight_centre.aceis.io.streams.sparql2stream.S2SPollutionStreamMin;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SResultListener;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SSensorStream;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2STrafficStream;
-import org.insight_centre.aceis.io.streams.sparql2stream.S2STrafficStreamMin;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SUserLocationStream;
 import org.insight_centre.aceis.io.streams.sparql2stream.S2SWeatherStream;
 import org.insight_centre.aceis.observations.SensorObservation;
@@ -511,8 +510,8 @@ public class CityBench {
 					sss = new S2SWeatherStream(sparql2streamService,sn,"streams/"+sn+".stream");
 				} else if (sn.toLowerCase().contains("location"))
 					sss = new S2SUserLocationStream(sparql2streamService,sn,"streams/"+sn+".stream");
-//				else if (sn.toLowerCase().contains("parking"))
-//					css = new CSPARQLAarhusParkingStream(uri, path, ed, start, end);
+				else if (sn.toLowerCase().contains("parking"))
+					sss = new S2SParkingStream(sparql2streamService,sn,"streams/"+sn+".stream");
 				else
 					throw new Exception("Sensor type not supported.");
 				sss.setRate(this.rate);
